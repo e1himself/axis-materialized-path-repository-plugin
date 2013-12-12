@@ -1,0 +1,24 @@
+propel:
+  _attributes:
+    package: plugins.AxisMaterializedPathRepositoryPlugin.lib.Axis.MaterializedPath.Model
+
+  axis_materialized_path_entry:
+    _attributes: { phpName: Entry, namespace: Axis\MaterializedPath\Model }
+    _propel_behaviors:
+      symfony:
+        form:   false
+        filter: false
+
+    id: ~
+
+    entity_type: { type: char, size: 32, required: true }
+    entity_id:   { type: integer, required: true }
+
+    slug: { type: varchar, required: true }
+    path: { type: varchar, required: true }
+    level: { type: varchar, required: true }
+    order_number: { type: integer, default: 0 }
+
+    _uniques:
+      entity_reference_uniq: [ entity_type, entity_id ]
+      entity_path_uniq: [ entity_type, path ]
