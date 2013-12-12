@@ -72,11 +72,12 @@ $children = $tree->getChildren('/'); // [$contacts, $about]
 Roadmap
 -------
 
-1. [ ] Improve tree control API:
+Improve tree control API:
   - [ ] move subtree
   - [ ] get parents
   - [ ] get siblings
   - [ ] get descendants
   - [ ] get ancestors
 
-2. [ ] Allow siblings ordering (use `order_number` column)
+Other:
+  - [ ] Allow siblings ordering (use `order_number` column)
