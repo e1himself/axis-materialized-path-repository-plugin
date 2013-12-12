@@ -34,4 +34,13 @@ trait PathUtilsTrait {
     $path = trim($path,'/');
     return $path ? "/$path/" : '/';
   }
+
+  /**
+   * @param string $path Normalized path
+   * @return int
+   */
+  protected function _calcLevel($path)
+  {
+    return substr_count($path, '/');
+  }
 } 

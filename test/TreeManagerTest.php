@@ -1,5 +1,7 @@
 <?php
+
 use Axis\MaterializedPath\Exception\PathHasChildrenException;
+use Axis\MaterializedPath\Model\Entry;
 use Axis\MaterializedPath\Model\EntryQuery;
 use Axis\MaterializedPath\TreeManager;
 use Axis\MaterializedPath\Model\EntryPeer;
@@ -42,6 +44,14 @@ class TreeManagerTest extends PHPUnit_Symfony_Model_TestCase
       $tree->put($path, $doc);
     }
     return $docs;
+  }
+
+  /**
+   * @return EntryQuery
+   */
+  protected function createQuery()
+  {
+    return EntryQuery::create('AxisDocument');
   }
 
   public function testNotFound()
@@ -97,7 +107,7 @@ class TreeManagerTest extends PHPUnit_Symfony_Model_TestCase
     $tree = $this->createTreeManager();
     $docs = $this->createTree($tree, ['/', '/home', '/home/io', '/media', '/media/home', '/media/home/io', '/mount']);
 
-    $count = EntryQuery::create()->count();
+    $count = $this->createQuery()->count();
     $this->assertEquals(7, $count);
 
     try
@@ -110,21 +120,22 @@ class TreeManagerTest extends PHPUnit_Symfony_Model_TestCase
       $this->assertTrue(true, 'Exception thrown');
     }
 
-    $count = EntryQuery::create()->count();
+    $count = $this->createQuery()->count();
     $this->assertEquals(7, $count);
 
     $tree->remove('/home', true);
 
-    $count = EntryQuery::create()->count();
+    $count = $this->createQuery()->count();
     $this->assertEquals(5, $count);
 
     $tree->remove('/media/home', true);
 
-    $count = EntryQuery::create()->count();
+    $count = $this->createQuery()->count();
     $this->assertEquals(3, $count);
 
-    $nodes = EntryQuery::create()->find()->getArrayCopy();
-    $entries = array_map(call_each('getPath'), $nodes);
+    $nodes = $this->createQuery()->find()->getArrayCopy();
+    $entries = array_map(function($x) { /** @var $x Entry */ return $x->getPath(); }, $nodes);
+
     sort($entries);
 
     $this->assertEquals(['/', '/media/', '/mount/'], $entries);
@@ -136,27 +147,60 @@ class TreeManagerTest extends PHPUnit_Symfony_Model_TestCase
     $tree = $this->createTreeManager();
     $docs = $this->createTree($tree, $x);
 
-    $count = EntryQuery::create()->count();
+    $count = $this->createQuery()->count();
     $this->assertEquals(7, $count);
 
     $count = $tree->countChildren('/home');
     $this->assertEquals(1, $count);
 
+    //
     $children = $tree->getChildren('/home');
     $this->assertEquals(1, count($children));
 
     $this->assertEquals(['/home/io/'], array_keys($children));
 
+    //
     $count = $tree->countChildren('/');
-    $this->assertEquals(6, $count);
+    $this->assertEquals(3, $count);
 
+    //
     $children = $tree->getChildren('/');
-    $this->assertEquals(6, count($children));
+    $this->assertEquals(3, count($children));
 
     $paths = array_keys($children);
     sort($paths);
 
+    $this->assertEquals(['/home/', '/media/', '/mount/'], $paths);
+
+    //
+    $descendants = $tree->getDescendants('/');
+    $this->assertEquals(6, count($descendants));
+
+    $paths = array_keys($descendants);
+    sort($paths);
+
     $this->assertEquals(['/home/', '/home/io/', '/media/', '/media/home/', '/media/home/io/', '/mount/'], $paths);
+  }
+
+  public function testSiblings()
+  {
+    $x = ['/', '/home', '/home/io', '/media', '/media/home', '/media/home/io', '/mount'];
+    $tree = $this->createTreeManager();
+    $docs = $this->createTree($tree, $x);
+
+    $siblings = $tree->countSiblings('/');
+    $this->assertEquals(1, $siblings);
+
+    $siblings = $tree->countSiblings('/home');
+    $this->assertEquals(3, $siblings);
+
+    $siblings = $tree->getSiblings('/home');
+    $this->assertEquals(3, count($siblings));
+
+    $paths = array_keys($siblings);
+    sort($paths);
+
+    $this->assertEquals(['/home/', '/media/', '/mount/'], $paths);
   }
 
   protected function tearDown()

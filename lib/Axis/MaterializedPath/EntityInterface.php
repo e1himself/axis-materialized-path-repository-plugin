@@ -12,7 +12,12 @@ namespace Axis\MaterializedPath;
 interface EntityInterface
 {
   /**
-   * @return int
+   * @return string
    */
   public function getTreeId();
+
+  /**
+   * @return string
+   */
+  public function getTreeType();
 } 

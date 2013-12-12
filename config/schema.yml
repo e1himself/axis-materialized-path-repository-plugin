@@ -11,8 +11,8 @@ propel:
 
     id: ~
 
-    entity_type: { type: char, size: 32, required: true }
-    entity_id:   { type: integer, required: true }
+    entity_type: { type: varchar, size: 32, required: true }
+    entity_id:   { type: varchar, required: true }
 
     slug: { type: varchar, required: true }
     path: { type: varchar, required: true }
@@ -20,5 +20,4 @@ propel:
     order_number: { type: integer, default: 0 }
 
     _uniques:
-      entity_reference_uniq: [ entity_type, entity_id ]
       entity_path_uniq: [ entity_type, path ]
