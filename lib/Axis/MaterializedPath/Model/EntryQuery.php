@@ -188,12 +188,16 @@ class EntryQuery extends BaseEntryQuery
     if (count($map))
     {
       $peer = constant($this->entityType.'::PEER');
-      /** @var EntityInterface[] $objects */
-      $objects = $peer::retrieveByPKs(array_keys($map));
-
-      foreach ($objects as $object)
+      $objects = [];
+      foreach ($peer::retrieveByPKs(array_keys($map)) as $o)
       {
-        $res[$map[$object->getTreeId()]] = $object;
+        /** @var EntityInterface $o */
+        $objects[$o->getTreeId()] = $o;
+      }
+
+      foreach ($map as $id => $path)
+      {
+        $res[$path] = isset($objects[$id]) ? $objects[$id] : null;
       }
     }
 

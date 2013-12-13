@@ -18,17 +18,17 @@ class Position
   /** @var string */
   protected $type;
 
-  /** @var EntityInterface */
+  /** @var string */
   protected $pivot;
 
   /**
    * @param string $type
-   * @param EntityInterface|null $pivot
+   * @param string|null $pivotPath
    */
-  function __construct($type, $pivot = null)
+  function __construct($type, $pivotPath = null)
   {
     $this->type = $type;
-    $this->pivot = $pivot;
+    $this->pivot = $pivotPath;
   }
 
   /**
@@ -48,25 +48,25 @@ class Position
   }
 
   /**
-   * @param EntityInterface $pivot
+   * @param string $pivotPath
    * @return Position
    */
-  public static function after($pivot)
+  public static function after($pivotPath)
   {
-    return new self(self::AFTER, $pivot);
+    return new self(self::AFTER, $pivotPath);
   }
 
   /**
-   * @param EntityInterface $pivot
+   * @param string $pivotPath
    * @return Position
    */
-  public static function before($pivot)
+  public static function before($pivotPath)
   {
-    return new self(self::BEFORE, $pivot);
+    return new self(self::BEFORE, $pivotPath);
   }
 
   /**
-   * @return \Axis\MaterializedPath\EntityInterface
+   * @return string
    */
   public function getPivot()
   {

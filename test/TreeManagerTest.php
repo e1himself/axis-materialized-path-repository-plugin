@@ -3,6 +3,7 @@
 use Axis\MaterializedPath\Exception\PathHasChildrenException;
 use Axis\MaterializedPath\Model\Entry;
 use Axis\MaterializedPath\Model\EntryQuery;
+use Axis\MaterializedPath\Position;
 use Axis\MaterializedPath\TreeManager;
 use Axis\MaterializedPath\Model\EntryPeer;
 
@@ -136,7 +137,7 @@ class TreeManagerTest extends PHPUnit_Symfony_Model_TestCase
     $nodes = $this->createQuery()->find()->getArrayCopy();
     $entries = array_map(function($x) { /** @var $x Entry */ return $x->getPath(); }, $nodes);
 
-    sort($entries);
+//    sort($entries);
 
     $this->assertEquals(['/', '/media/', '/mount/'], $entries);
   }
@@ -168,7 +169,7 @@ class TreeManagerTest extends PHPUnit_Symfony_Model_TestCase
     $this->assertEquals(3, count($children));
 
     $paths = array_keys($children);
-    sort($paths);
+//    sort($paths);
 
     $this->assertEquals(['/home/', '/media/', '/mount/'], $paths);
 
@@ -198,9 +199,32 @@ class TreeManagerTest extends PHPUnit_Symfony_Model_TestCase
     $this->assertEquals(3, count($siblings));
 
     $paths = array_keys($siblings);
-    sort($paths);
+//    sort($paths);
 
     $this->assertEquals(['/home/', '/media/', '/mount/'], $paths);
+  }
+
+  public function testOrder()
+  {
+    $tree = $this->createTreeManager();
+
+    $root = new AxisDocument();
+    $root->save();
+
+    $tree->put('/', $root);
+
+    $home = new AxisDocument();
+    $home->save();
+    $tree->put('/home', $home);
+
+    $x = new AxisDocument();
+    $x->save();
+    $tree->put('/x', $x, Position::FIRST);
+
+    $children = $tree->getChildren('/');
+    $paths = array_keys($children);
+
+    $this->assertEquals(['/x/', '/home/'], $paths);
   }
 
   protected function tearDown()

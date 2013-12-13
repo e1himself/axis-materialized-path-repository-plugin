@@ -15,7 +15,6 @@ use Axis\MaterializedPath\Internal\PathUtilsTrait;
 use Axis\MaterializedPath\Model\Entry;
 use Axis\MaterializedPath\Model\EntryPeer;
 use Axis\MaterializedPath\Model\EntryQuery;
-use Axis\MaterializedPath\Position;
 
 class TreeManager
 {
@@ -37,14 +36,23 @@ class TreeManager
   /**
    * @param string $path
    * @param EntityInterface $entity
-   * @param bool $overwrite
+   * @param bool|Position|string $overwrite Flag to overwrite existing records (or $position)
    * @param Position|null $position
    * @throws Exception\PathNotFoundException
    * @throws Exception\PathAlreadyExistsException
    */
   public function put($path, $entity, $overwrite = false, $position = null)
   {
+    $connection = \Propel::getConnection();
+    $connection->beginTransaction();
+
     $path = $this->_normalize($path);
+
+    if ($position === null && (is_string($overwrite) || $overwrite instanceof Position))
+    {
+      $position = $overwrite;
+      $overwrite = false;
+    }
 
     $e = EntryPeer::retrieveByPath($path);
     if ($e && !$overwrite)
@@ -62,16 +70,102 @@ class TreeManager
       $e->setSlug(basename($path));
     }
 
-//    if (is_string($position))
-//    {
-//      $position = new Position($position);
-//    }
+    $orderNumber = $this->_handleOrder($path, $position ?: Position::LAST);
 
-
-
+    $e->setOrderNumber($orderNumber);
     $e->setEntityId($entity->getTreeId());
     $e->setEntityType($this->entityType);
     $e->save();
+
+    $connection->commit();
+  }
+
+  /**
+   * @param string $path
+   * @param string|Position $position
+   * @throws Exception\PathNotFoundException
+   * @throws \InvalidArgumentException
+   * @return int
+   */
+  protected function _handleOrder($path, $position)
+  {
+    if ($position || is_string($position))
+    {
+      $position = new Position($position);
+    }
+
+    switch ($position->getType())
+    {
+      case 'first':
+        $q = EntryQuery::create($this->entityType)
+          ->siblingsOf($path)
+          ->treeOrder();
+        $this->_reorder($q, 2);
+        return 1;
+
+      case 'before':
+        if ($e = EntryPeer::retrieveByPath($position->getPivot()))
+        {
+          $orderNumber = $e->getOrderNumber();
+          $q = EntryQuery::create($this->entityType)
+            ->siblingsOf($path)
+            ->filterByOrderNumber($orderNumber, \Criteria::GREATER_EQUAL)
+            ->treeOrder();
+          $this->_reorder($q, $orderNumber + 1);
+          return $orderNumber;
+        }
+        else
+        {
+          throw new PathNotFoundException($position->getPivot());
+        }
+      case 'after':
+        if ($e = EntryPeer::retrieveByPath($position->getPivot()))
+        {
+          $orderNumber = $e->getOrderNumber() + 1;
+          $q = EntryQuery::create($this->entityType)
+            ->siblingsOf($path)
+            ->filterByOrderNumber($orderNumber, \Criteria::GREATER_EQUAL)
+            ->treeOrder();
+          $this->_reorder($q, $orderNumber + 1);
+          return $orderNumber;
+        }
+        else
+        {
+          throw new PathNotFoundException($position->getPivot());
+        }
+      case 'last':
+        $max_taken = EntryQuery::create($this->entityType)
+          ->siblingsOf($path)
+          ->addAsColumn('max_taken', 'MAX(order_number)')
+          ->select(['max_taken'])
+          ->findOne();
+        return $max_taken + 1;
+
+      default:
+        throw new \InvalidArgumentException('Unsupported position');
+    }
+  }
+
+  /**
+   * @param EntryQuery $query
+   * @param int $startFrom
+   * @return int
+   */
+  protected function _reorder($query, $startFrom)
+  {
+    $max_taken = $startFrom;
+
+    /** @var Entry[] $siblings */
+    $siblings = $query->find()->getArrayCopy();
+
+    foreach ($siblings as $sibling)
+    {
+      $sibling->setOrderNumber($max_taken);
+      $sibling->save();
+      $max_taken++;
+    }
+
+    return count($siblings);
   }
 
   /**

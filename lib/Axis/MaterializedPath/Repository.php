@@ -16,11 +16,12 @@ class Repository
   protected $trees = [];
 
   /**
-   * @param string $name
+   * @param string|EntityInterface $entity
    * @return TreeManager
    */
-  public function getTreeManager($name)
+  public function getTreeManager($entity)
   {
+    $name = is_string($entity) ? $entity : $entity->getTreeType();
     if (!isset($this->trees[$name]))
     {
       $this->trees[$name] = new TreeManager($name);
@@ -35,9 +36,21 @@ class Repository
   public function find($entity)
   {
     return EntryQuery::create()
-      ->filterByEntityType($entity->getOmType())
+      ->filterByEntityType($entity->getTreeType())
       ->filterByEntityId($entity->getTreeId())
       ->findOne();
+  }
+
+  /**
+   * @param EntityInterface $entity
+   * @return \PropelCollection|Entry[]
+   */
+  public function findAll($entity)
+  {
+    return EntryQuery::create()
+      ->filterByEntityType($entity->getTreeType())
+      ->filterByEntityId($entity->getTreeId())
+      ->find();
   }
 
   /**
@@ -48,5 +61,16 @@ class Repository
   {
     $e = $this->find($entity);
     return $e ? $e->getPath() : null;
+  }
+
+  /**
+   * @param EntityInterface $entity
+   * @return array
+   */
+  public function getAllPaths($entity)
+  {
+    $es = $this->findAll($entity)->getArrayCopy();
+    $ret = array_map(function($x) { /** @var $x Entry */ return $x->getPath(); }, $es);
+    return $ret;
   }
 }
