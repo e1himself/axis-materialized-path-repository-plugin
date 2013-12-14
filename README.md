@@ -43,7 +43,7 @@ propel:
 
 You do not need to modify your schema to organize your objects into tree.
 
-Implement `getTreeId()` method in your entity:
+Implement `getTreeId()` and `getTreeType()` methods in your entity:
 
 ~~~ php
 
@@ -52,6 +52,11 @@ class Document
   public function getTreeId()
   {
     return (string)$this->getPrimaryKey();
+  }
+  
+  public function getTreeType()
+  {
+    return __CLASS__;
   }
 }
 
