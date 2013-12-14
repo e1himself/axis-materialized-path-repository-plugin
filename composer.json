@@ -1,0 +1,32 @@
+{
+  "name": "axis/axis-materialized-path-repository-plugin",
+  "description": "Plugin to use materialized path as hierarchy backend for Propel entities",
+
+  "type": "symfony1-plugin",
+  "extra": {
+    "installer-name": "AxisMaterializedPathRepositoryPlugin"
+  },
+
+  "keywords": ["symfony", "propel", "hierarchy", "materialized path"],
+  "license": "MIT",
+  "homepage": "https://github.com/e1himself/axis-materialized-path-repository-plugin",
+
+  "authors": [
+    {
+      "name": "Ivan Voskoboynyk",
+      "email": "ioann.voskoboynyk@gmail.com",
+      "homepage": "https://github.com/e1himself"
+    }
+  ],
+
+  "require": {
+    "php": ">=5.4",
+    "composer/installers": "*"
+  },
+
+  "autoload": {
+    "psr-0": {
+      "Axis\\MaterializedPath": "lib"
+    }
+  }
+}

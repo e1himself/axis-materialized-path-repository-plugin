@@ -377,4 +377,13 @@ class TreeManager
   {
     return EntryQuery::create($this->entityType)->descendantsOf($path)->count();
   }
+
+  /**
+   * @param string $path
+   * @return int
+   */
+  public function getLevel($path)
+  {
+    return $this->_calcLevel($path);
+  }
 } 
