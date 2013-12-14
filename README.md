@@ -3,10 +3,27 @@ AxisMaterializedPathRepository Plugin
 
 Symfony1 plugin to implement materialized path repository for storing hierarchical data
 
+Requirements
+------------
+
+1. Symfony 1.4
+2. Propel ORM Plugin 1.6
+3. PHP 5.4+
+
 Installation
 ------------
 
-// TODO: Add `composer.json` package info
+1. Add requirement to your `composer.json`:
+
+~~~ json
+"require": {
+  "e1stuff/axis-materialized-path-repository-plugin": "0.1.*"
+}
+~~~
+
+2. Build model by running `php symfony propel:build-model`
+3. Update your database schema (using propel migration or manually)
+4. Enable plugin in `ProjectConfigiration`
 
 Usage
 -----
