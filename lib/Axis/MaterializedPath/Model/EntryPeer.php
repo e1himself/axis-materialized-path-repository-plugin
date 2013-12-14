@@ -14,30 +14,34 @@ class EntryPeer extends BaseEntryPeer
 
   /**
    * @param Entry $obj
-   * @param null $key
+   * @param string|null $key
    */
   public static function addInstanceToPool($obj, $key = null)
   {
     if (\Propel::isInstancePoolingEnabled()) {
       $path = $obj->getPath();
-      EntryPeer::$instances['$path:'.$path] = $obj;
+      $pathKey = self::_pathKey($obj->getEntityType(), $path);
+      EntryPeer::$instances[$pathKey] = $obj;
+      parent::addInstanceToPool($obj, $key);
     }
   }
 
   /**
+   * @param string $entityType
    * @param $path
    * @return Entry
    */
-  public static function retrieveByPath($path)
+  public static function retrieveByPath($entityType, $path)
   {
     $path = static::_normalize($path);
+    $pathKey = self::_pathKey($entityType, $path);
 
-    if (\Propel::isInstancePoolingEnabled() && $obj = static::getInstanceFromPool('$path:'.$path))
+    if (\Propel::isInstancePoolingEnabled() && $obj = static::getInstanceFromPool($pathKey))
     {
       return $obj;
     }
 
-    $obj = EntryQuery::create()
+    $obj = EntryQuery::create($entityType)
       ->filterByPath($path)
       ->findOne();
 
@@ -45,22 +49,42 @@ class EntryPeer extends BaseEntryPeer
   }
 
   /**
+   * @param string $entityType
    * @param string $path
    * @return bool
    */
-  public static function doesPathExist($path)
+  public static function doesPathExist($entityType, $path)
   {
     $path = static::_normalize($path);
-
-    if (\Propel::isInstancePoolingEnabled() && $obj = static::getInstanceFromPool('$path:'.$path))
+    $pathKey = self::_pathKey($entityType, $path);
+    if (\Propel::isInstancePoolingEnabled() && $obj = static::getInstanceFromPool($pathKey))
     {
       return true;
     }
 
-    $count = EntryQuery::create()
+    $count = EntryQuery::create($entityType)
       ->filterByPath($path)
       ->count();
 
     return $count > 0;
+  }
+
+  /**
+   * @param string $entityType
+   * @param string $path
+   * @return string
+   */
+  protected static function _pathKey($entityType, $path)
+  {
+    return '$'.$entityType.':'.$path;
+  }
+
+  /**
+   * @param string $path
+   * @return null|string Parent path or null for root
+   */
+  public static function parentPath($path)
+  {
+    return self::_normalize($path) != '/' ? self::_getParentPath($path) : null;
   }
 }

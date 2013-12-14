@@ -227,9 +227,63 @@ class TreeManagerTest extends PHPUnit_Symfony_Model_TestCase
     $this->assertEquals(['/x/', '/home/'], $paths);
   }
 
-  protected function tearDown()
+  public function testMoveSubtreeLast()
   {
-    parent::tearDown();
-//    EntryPeer::doDeleteAll();
+    $x = ['/', '/home', '/home/io', '/media', '/media/home', '/media/home/io', '/mount'];
+    $tree = $this->createTreeManager();
+    $docs = $this->createTree($tree, $x);
+
+    $tree->move('/media', '/home/io/media');
+    $nodes = $tree->getAll();
+    $paths = array_keys($nodes);
+    sort($paths);
+
+    $this->assertEquals(
+      ['/', '/home/', '/home/io/', '/home/io/media/', '/home/io/media/home/', '/home/io/media/home/io/', '/mount/'],
+      $paths
+    );
+  }
+
+  public function testMoveFirst()
+  {
+    $x = ['/', '/home', '/home/io', '/media', '/media/home', '/media/home/io', '/mount'];
+    $tree = $this->createTreeManager();
+    $docs = $this->createTree($tree, $x);
+
+    $tree->move('/media', '/home/media', Position::FIRST);
+    $nodes = $tree->getChildren('/home');
+    $paths = array_keys($nodes);
+
+    $this->assertEquals(['/home/media/', '/home/io/'], $paths);
+  }
+
+  public function testMovePivot()
+  {
+    $x = ['/', '/home', '/home/io', '/home/zorro', '/home/ace', '/root', '/mount'];
+    $tree = $this->createTreeManager();
+    $docs = $this->createTree($tree, $x);
+
+    $tree->move('/root', '/home/root', Position::before('/home/zorro'));
+    $nodes = $tree->getChildren('/home');
+    $paths = array_keys($nodes);
+
+    $this->assertEquals(['/home/io/', '/home/root/', '/home/zorro/', '/home/ace/'], $paths);
+
+    $tree->move('/home/root', '/home/root', Position::before('/home/ace'));
+
+    $nodes = $tree->getChildren('/home');
+    $paths = array_keys($nodes);
+
+    $this->assertEquals(['/home/io/', '/home/zorro/', '/home/root/', '/home/ace/'], $paths);
+  }
+
+  public function testAncestors()
+  {
+    $x = ['/', '/home', '/home/io', '/home/zorro', '/home/ace', '/root', '/mount'];
+    $tree = $this->createTreeManager();
+    $docs = $this->createTree($tree, $x);
+
+    $ancestors = $tree->getAncestors('/home/zorro');
+    $this->assertEquals(['/', '/home/'], array_keys($ancestors));
   }
 }

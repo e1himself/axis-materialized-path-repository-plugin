@@ -137,7 +137,7 @@ class EntryQuery extends BaseEntryQuery
 
       if ($excludeSelf)
       {
-        $this->where('path != ?', $p);
+        $this->filterByPath($p, \Criteria::NOT_EQUAL);
       }
     }
 
@@ -151,7 +151,12 @@ class EntryQuery extends BaseEntryQuery
   public function ancestorsOf($path)
   {
     $p = $this->_normalize($path);
-    $this->where('? LIKE CONCAT(path,"%")', $path); // $path LIKE "{entry.path}_%"
+    $PATH = EntryPeer::PATH;
+
+    $db = $this->getTableMap()->getDatabaseMap()->getDBAdapter();
+    $condition = sprintf('? LIKE %s', $db->concatString(EntryPeer::PATH, "'%'"));
+
+    $this->where($condition, $path); // $path LIKE "{entry.path}%"
     $this->filterByLevel($this->_calcLevel($p), \Criteria::LESS_THAN);
     return $this;
   }

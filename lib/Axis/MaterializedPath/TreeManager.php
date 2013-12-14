@@ -54,15 +54,20 @@ class TreeManager
       $overwrite = false;
     }
 
-    $e = EntryPeer::retrieveByPath($path);
+    $e = EntryPeer::retrieveByPath($this->entityType, $path);
     if ($e && !$overwrite)
     {
       throw new PathAlreadyExistsException($path);
-    } elseif (!$e)
+    }
+    elseif (!$e)
     {
-      if ($path != '/' && !EntryPeer::doesPathExist($parent = $this->_getParentPath($path)))
+      if ($path != '/')
       {
-        throw new PathNotFoundException($parent);
+        $parent = $this->_getParentPath($path);
+        if (!EntryPeer::doesPathExist($this->entityType, $parent))
+        {
+          throw new PathNotFoundException($parent);
+        }
       }
 
       $e = new Entry();
@@ -82,6 +87,69 @@ class TreeManager
 
   /**
    * @param string $path
+   * @param string $to
+   * @param null|string|Position $position
+   * @throws Exception\PathNotFoundException
+   * @throws Exception\PathAlreadyExistsException
+   */
+  public function move($path, $to, $position = null)
+  {
+    $connection = \Propel::getConnection();
+    $connection->beginTransaction();
+
+    if ($path != $to && EntryPeer::doesPathExist($this->entityType, $to))
+    {
+      throw new PathAlreadyExistsException($to);
+    }
+    else
+    {
+      if ($path != '/')
+      {
+        $parent = EntryPeer::parentPath($path);
+        if (!EntryPeer::retrieveByPath($this->entityType, $parent))
+        {
+          throw new PathNotFoundException($parent);
+        }
+      }
+
+      $subRoot = EntryPeer::retrieveByPath($this->entityType, $path);
+      // shift target siblings
+      $order = $this->_handleOrder($to, $position ?: Position::LAST);
+      // save orderNumber
+      $subRoot->setOrderNumber($order);
+
+      if ($path == $to)
+      {
+        $subRoot->save();
+      }
+      else
+      {
+        // handle paths
+        /** @var Entry[] $entries */
+        $entries = EntryQuery::create($this->entityType)->branchOf($path)->find()->getArrayCopy();
+        $_from = $this->_normalize($path);
+        $_to = $this->_normalize($to);
+        foreach ($entries as $entry)
+        {
+          $entry->setPath(str_replace($_from, $_to, $entry->getPath()));
+          $entry->save();
+        }
+      }
+    }
+    $connection->commit();
+  }
+
+  /**
+   * @param string $path
+   * @param string|Position $position
+   */
+  public function reorder($path, $position)
+  {
+    $this->move($path, $path, $position);
+  }
+
+  /**
+   * @param string $path
    * @param string|Position $position
    * @throws Exception\PathNotFoundException
    * @throws \InvalidArgumentException
@@ -89,26 +157,26 @@ class TreeManager
    */
   protected function _handleOrder($path, $position)
   {
-    if ($position || is_string($position))
+    if (is_string($position))
     {
       $position = new Position($position);
     }
 
     switch ($position->getType())
     {
-      case 'first':
+      case Position::FIRST:
         $q = EntryQuery::create($this->entityType)
-          ->siblingsOf($path)
+          ->siblingsOf($path, true)
           ->treeOrder();
         $this->_reorder($q, 2);
         return 1;
 
-      case 'before':
-        if ($e = EntryPeer::retrieveByPath($position->getPivot()))
+      case Position::BEFORE:
+        if ($e = EntryPeer::retrieveByPath($this->entityType, $position->getPivot()))
         {
           $orderNumber = $e->getOrderNumber();
           $q = EntryQuery::create($this->entityType)
-            ->siblingsOf($path)
+            ->siblingsOf($path, true)
             ->filterByOrderNumber($orderNumber, \Criteria::GREATER_EQUAL)
             ->treeOrder();
           $this->_reorder($q, $orderNumber + 1);
@@ -118,12 +186,12 @@ class TreeManager
         {
           throw new PathNotFoundException($position->getPivot());
         }
-      case 'after':
-        if ($e = EntryPeer::retrieveByPath($position->getPivot()))
+      case Position::AFTER:
+        if ($e = EntryPeer::retrieveByPath($this->entityType, $position->getPivot()))
         {
           $orderNumber = $e->getOrderNumber() + 1;
           $q = EntryQuery::create($this->entityType)
-            ->siblingsOf($path)
+            ->siblingsOf($path, true)
             ->filterByOrderNumber($orderNumber, \Criteria::GREATER_EQUAL)
             ->treeOrder();
           $this->_reorder($q, $orderNumber + 1);
@@ -133,16 +201,16 @@ class TreeManager
         {
           throw new PathNotFoundException($position->getPivot());
         }
-      case 'last':
+      case Position::LAST:
         $max_taken = EntryQuery::create($this->entityType)
-          ->siblingsOf($path)
+          ->siblingsOf($path, true)
           ->addAsColumn('max_taken', 'MAX(order_number)')
           ->select(['max_taken'])
           ->findOne();
         return $max_taken + 1;
 
       default:
-        throw new \InvalidArgumentException('Unsupported position');
+        throw new \InvalidArgumentException('Unsupported position: ' . $position->getType());
     }
   }
 
@@ -175,7 +243,7 @@ class TreeManager
    */
   public function get($path)
   {
-    if ($e = EntryPeer::retrieveByPath($path))
+    if ($e = EntryPeer::retrieveByPath($this->entityType, $path))
     {
       $peer = constant($this->entityType.'::PEER');
       return $peer::retrieveByPk($e->getEntityId());
