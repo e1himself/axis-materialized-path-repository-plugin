@@ -386,4 +386,13 @@ class TreeManager
   {
     return $this->_calcLevel($path);
   }
+
+  /**
+   * @param string $path
+   * @return string|null
+   */
+  public function getParentPath($path)
+  {
+    return $this->_getParentPath($this->_normalize($path));
+  }
 } 
