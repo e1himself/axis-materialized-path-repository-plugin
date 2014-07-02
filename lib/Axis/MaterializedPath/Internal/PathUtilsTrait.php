@@ -16,7 +16,7 @@ trait PathUtilsTrait {
   protected static function _getParentPath($path)
   {
     $pos = strrpos($path, '/', -2);
-    return $pos ? substr($path, 0, $pos) : '/';
+    return $pos ? substr($path, 0, $pos+1) : '/';
   }
 
   /**
