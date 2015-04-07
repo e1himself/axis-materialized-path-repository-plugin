@@ -1,5 +1,5 @@
 {
-  "name": "e1stuff/axis-materialized-path-repository-plugin",
+  "name": "e1himself/axis-materialized-path-repository-plugin",
   "description": "Plugin to use materialized path as hierarchy backend for Propel entities",
 
   "type": "symfony1-plugin",
