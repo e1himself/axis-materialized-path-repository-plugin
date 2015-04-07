@@ -9,7 +9,7 @@
 
   "keywords": ["symfony", "propel", "hierarchy", "materialized path"],
   "license": "MIT",
-  "homepage": "https://github.com/e1stuff/axis-materialized-path-repository-plugin",
+  "homepage": "https://github.com/e1himself/axis-materialized-path-repository-plugin",
 
   "authors": [
     {
